@@ -11,7 +11,8 @@
 .Rproj.user/
 
 *.gephi
+*.svg
 *.gdf
 *.png
-*.xz
+INE/*
 
