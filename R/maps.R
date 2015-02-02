@@ -1,4 +1,7 @@
 ## Theme for maps
+PAN.COLOR <- "#2b8cbe"
+PRI.COLOR <- "#de2d26"
+PRD.COLOR <- "#fed300"
 
 theme_bare <-theme(axis.line=element_blank(),
                    axis.text.x=element_blank(),
