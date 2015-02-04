@@ -32,6 +32,14 @@ names(pri) <- party.names
 names(prd) <- party.names
 names(pan) <- party.names
 
+replaceSpace <- function(df) {
+  df$paterno <- str_replace_all(df$paterno, "\\s","_")
+  df$materno <- str_replace_all(df$materno, "\\s","_")
+  return(df)
+}
+pri <- replaceSpace(pri)
+pan <- replaceSpace(pan)
+prd <- replaceSpace(prd)
 #sourceCpp("sort.cpp")
 
 all(unique(prd$entidad)== unique(pan$entidad))
@@ -43,13 +51,21 @@ pan$state_code <- map[unlist(pan$entidad)]
 prd$state_code <- map[unlist(prd$entidad)]
 pri$state_code <- map[unlist(pri$entidad)]
 
+all <- rbind(pri,pan,prd)
+rm(pri);rm(pan);rm(prd)
 
 ## Read the state map
 
 states <- readOGR("maps", "ESTADOS")
 bb <- bbox(as(extent(states) , "SpatialPolygons" ) )
 states.ff <- fortify(states, region='CVE_ENT')
+states.ff$state_code <- as.numeric(states.ff$id)
 
 state_centroids <- as.data.frame(coordinates(states))
 names(state_centroids ) <- c("long", "lat")
 state_centroids$state_code <- 1:32
+
+
+PAN.COLOR <- "#2b8cbe"
+PRI.COLOR <- "#de2d26"
+PRD.COLOR <- "#fed300"

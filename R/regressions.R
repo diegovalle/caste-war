@@ -19,7 +19,7 @@ mostXNames <- function(total, party, x, y, color) {
 
 ## Tables of the most overepresented names by party 
 
-all <- rbind(pri,pan,prd)
+
 
 total <- all %>%
   group_by(nombre) %>%
@@ -52,7 +52,7 @@ ggsave(file.path("charts", "pri_names.svg"), dpi = 100, width = 7, height = 9)
 
 print.data.frame(head(filter(total, partido == "PAN"), 30))
 print.data.frame(head(filter(total, partido == "PRI"), 30))
-print.data.frame(head(filter(total, partido == "PRD"), 30))
+print.data.frame(head(filter(total, partido == "PRD"), 100))
 filter(total, nombre == "DIEGO")
 print.data.frame(total[which(total$nombre %in% c("NAYELI", "MAYELI", "NAYELLI",
                           "ANA YELI", "ANALLELI", "ANAYELI",
@@ -60,9 +60,84 @@ print.data.frame(total[which(total$nombre %in% c("NAYELI", "MAYELI", "NAYELLI",
                           "NAYELY")),])
 
 
+
+## Percentage unique by party
+uniq.parties <- all %>%
+  group_by(nombre, partido) %>%
+  summarise(a = n())%>%
+  group_by(partido) %>%
+  summarise(unique = n()) %>%
+  inner_join(all %>% group_by(partido) %>% summarise(count = n())) %>%
+  mutate(per = unique / count)
+
+uniq.parties$names <- NA
+vec<-unlist(str_split(filter(all, partido == "PAN")$nombre, " "))
+uniq.parties$names[1] <- length(unique(vec))
+vec<-unlist(str_split(filter(all, partido == "PRD")$nombre, " "))
+uniq.parties$names[2] <- length(unique(vec))
+vec<-unlist(str_split(filter(all, partido == "PRI")$nombre, " "))
+uniq.parties$names[3] <- length(unique(vec))
+
+uniq.parties$per.names <- uniq.parties$names / uniq.parties$count
+
+ggplot(uniq.parties, aes(partido, per.names, fill = partido)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Percentage of unique names by party") +
+  xlab("percent unique") +
+  scale_fill_manual("party",
+                     breaks = c("PRI", "PRD", "PAN"), 
+                     values = c("#2b8cbe", "#fed300", "#de2d26")) +
+  theme_bw() +
+  coord_flip()
+ggsave(file.path("charts", "unique_name.svg"), 
+       dpi = 100, width = 7.60, height = 5)
+# uniq.states <- all %>%
+#   group_by(state_code, partido) %>%
+#   summarise(unique.names = length(unique(unlist(str_split(nombre, " ")))),
+#             count = n())
+# uniq.states$per.names <- uniq.states$unique.names / uniq.states$count
+# 
+# ggplot(left_join(states.uniq, uniq.states), aes(lat, lon, fill = per.names)) +
+#   geom_polygon(aes(long, lat, group=group),
+#                color = "black", size = .1) +
+#   coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
+#   theme_bw() + 
+#   ggtitle("title") +
+#   theme_bare +
+#   facet_wrap(~ partido, ncol = 2)
+# 
+# uniq.states <- all %>%
+#   group_by(nombre, state_code) %>%
+#   summarise(a = n())%>%
+#   group_by(state_code) %>%
+#   summarise(unique = n()) %>%
+#   inner_join(all %>% group_by(state_code) %>% summarise(count = n())) %>%
+#   mutate(per = unique / count)
+# 
+# 
+# ggplot(left_join(states.ff, uniq.states), aes(lat, lon, fill = per)) +
+#   geom_polygon(aes(long, lat, group=group),
+#                color = "black", size = .1) +
+#   coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
+#   theme_bw() + 
+#   ggtitle("title") +
+#   theme_bare
+
 ## Does name length predict PANismo
 
 all$length <- str_length(all$nombre) + str_length(all$paterno) + str_length(all$materno)
+
+ggplot(all,
+  aes(x = length,group = partido, color = partido)) +
+    geom_density(adjust = 3, size = 1.2)+
+  ggtitle("Distribution of name length for all major political parties (PAN, PRI, PRD)") +
+  xlab("number of characters") +
+  scale_color_manual("party",
+                    breaks = c("PAN", "PRI", "PRD"), 
+                    values = c("#2b8cbe", "#fed300", "#de2d26")) +
+  theme_bw()
+ggsave(file.path("charts", "length_distribution_parties.svg"), 
+       dpi = 100, width = 9.60, height = 7)
 
 dist_s <- condense(bin(all$length, 1))
 autoplot(dist_s) +
@@ -73,7 +148,7 @@ ggsave(file.path("charts", "length_distribution.svg"), dpi = 100, width = 9.60, 
 
 all %>%
   group_by(partido) %>%
-  summarise(quantile(length, probs = .05))
+  summarise(quantile(length, probs = .02))
 
 all[which.max(all$length),]
 all[which(all$length == 53),]
@@ -82,17 +157,13 @@ ggplot(all, aes(partido, length)) +
   geom_boxplot()
 
 pran <- filter(all, partido %in% c("PAN", "PRD"))
+
 pran$partido <- as.factor(pran$partido)
-
-
-sd2 <- condense(bin(pran$length, 1),
-                bin(as.numeric(pran$partido), 1))
-autoplot(sd2)
-# ggplot(filter(all, partido %in% c("PAN", "PRD")), aes(length, partido)) +
-#    geom_jitter() +
-#   geom_boxplot()
-
 pran$partido <- relevel(pran$partido, "PRD")
+
+
+
+
 fit.len <- glm(partido ~ length, family = binomial(), 
                data = pran)
 plot(fit.len, which = 1)
@@ -134,7 +205,7 @@ ggplot(pred.df, aes(length, response, group = partido, color = partido)) +
            label = "Proportion of names affiliated with the PRD (left wing)") +
   annotate("text", x = 42, y = .06, size = 4, color = "#333333",
            label = "Proportion of names affiliated with the PAN (right wing)") +
-  ggtitle("Probability of belonging to the PRD or PAN (given that you already are a member of a party)\nbased on a logistic regression of name length") +
+  ggtitle("Probability of belonging to the PRD or PAN (given that you already are a member of a party)\nbased on a logistic regression on name length") +
   theme_bw()
 ggsave(file.path("charts", "length_reg.svg"), dpi = 100, width = 9.60, height = 7)
 ##

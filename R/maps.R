@@ -1,7 +1,5 @@
 ## Theme for maps
-PAN.COLOR <- "#2b8cbe"
-PRI.COLOR <- "#de2d26"
-PRD.COLOR <- "#fed300"
+
 
 theme_bare <-theme(axis.line=element_blank(),
                    axis.text.x=element_blank(),
@@ -17,8 +15,8 @@ theme_bare <-theme(axis.line=element_blank(),
 
 ## Draw a small multiples chart of the membership numbers of the three main parties by state
 
-drawParty <- function(pri, pan, prd, state_centroids) {
-  bystate <- rbind(pri,prd,pan) %>%
+drawParty <- function(all, state_centroids) {
+  bystate <- all %>%
     group_by(state_code, partido) %>%
     summarise(count = n())
   ggplot(inner_join(bystate, state_centroids), aes(long, lat)) +
@@ -119,7 +117,7 @@ drawModularity <- function(party, modularity.data, colors, groups, title) {
 
 
 ## Chart of party membership
-drawParty(pri, pan, prd, state_centroids)
+drawParty(all, state_centroids)
 ggsave(file.path("charts", "parties.svg"), dpi = 100, width = 9.60, height = 7)
 
 
@@ -129,13 +127,13 @@ pan.groups <- 0:7
 pan.colors <- c("#06f141", "#0641f1", 
                 "#06f1f1", "#f1b606", "#f106b6", 
                 "#7cf106", "#7c06f1", "#f10606")
-drawModularity(pan, pan.mod, pan.colors, pan.groups, 
+drawModularity(filter(all, partido == "PAN"), pan.mod, pan.colors, pan.groups, 
                "Common Last Names, by Modularity (PAN)")
 ggsave(file.path("charts", "sm_pan.svg"), dpi = 100, width = 9.60, height = 7)
-drawSingleModularity(pan, pan.mod, pan.colors[6], pan.groups[6], 
+drawSingleModularity(filter(all, partido == "PAN"), pan.mod, pan.colors[6], pan.groups[6], 
                      "Common Last Names, Yucatan Group (PAN)")
 ggsave(file.path("charts", "yuc_pan.svg"), dpi = 100, width = 9.60, height = 7)
-drawSingleModularity(pan, pan.mod, pan.colors[8], pan.groups[8], 
+drawSingleModularity(filter(all, partido == "PAN"), pan.mod, pan.colors[8], pan.groups[8], 
                      "Common Last Names, Yucatan Group (PAN)")
 ggsave(file.path("charts", "ver_pan.svg"), dpi = 100, width = 9.60, height = 7)
 
@@ -145,11 +143,11 @@ prd.groups <- 0:7
 prd.colors <- c("#04b8b8", "#0431b8", 
                 "#5e04b8", "#f1b606", "#b8048b", 
                 "#04b831", "#b88b04", "#b80404")
-drawModularity(prd[, c("state_code", "paterno", "materno")], 
+drawModularity(filter(all, partido == "PRD")[, c("state_code", "paterno", "materno")], 
                prd.mod, prd.colors, prd.groups, 
                "Common Last Names, by Modularity (PRD)")
 ggsave(file.path("charts", "sm_prd.svg"), dpi = 100, width = 9.60, height = 7)
-drawSingleModularity(prd, prd.mod, prd.colors[5], prd.groups[5], 
+drawSingleModularity(filter(all, partido == "PRD"), prd.mod, prd.colors[5], prd.groups[5], 
                      "Common Last Names, Yucatan Group (PRD)")
 ggsave(file.path("charts", "yuc_prd.svg"), dpi = 100, width = 9.60, height = 7)
 
@@ -159,14 +157,14 @@ pri.colors <- c("#5b5be8", "#e8a15b",
                 "#5e04b8", "#f1b606", "#5b5be8", 
                 "#04b831", "#5be8a1", "#e85b5b",
                 "#a15be8", "#5be8e8", "#e85ba1", "black")
-drawModularity(pri, pri.mod, pri.colors, pri.groups, 
+drawModularity(filter(all, partido == "PRI"), pri.mod, pri.colors, pri.groups, 
                "Common Last Names, by Modularity (PRI)")
 ggsave(file.path("charts", "sm_pri.svg"), dpi = 100, width = 9.60, height = 7)
-drawSingleModularity(pri, 
+drawSingleModularity(filter(all, partido == "PRI"), 
                      pri.mod, pri.colors[7], pri.groups[7], 
                      "Common Last Names, Yucatan Group (PRI)")
 ggsave(file.path("charts", "yuc_pri.svg"), dpi = 100, width = 9.60, height = 7)
-drawSingleModularity(pri, 
+drawSingleModularity(filter(all, partido == "PRI"), 
                      pri.mod, pri.colors[11], pri.groups[11], 
                      "Common Last Names, Puebla Group (PRI)")
 ggsave(file.path("charts", "pipope_pri.svg"), dpi = 100, width = 9.60, height = 7)

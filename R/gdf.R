@@ -25,30 +25,24 @@ createGDF <- function(df, fileName) {
   return(TRUE)
 }
 
-createGDF(pan, file.path("gephi", "pan.gdf"))
-createGDF(filter(prd, paterno != "" | materno != "."), file.path("gephi", "prd.gdf"))
-createGDF(prd, file.path("gephi", "prd.gdf"))
-freq <- pri %>%
+createGDF(filter(all, partido == "PAN"), file.path("gephi", "pan.gdf"))
+createGDF(filter(filter(all, partido == "PRD"), paterno != "" | materno != "."), 
+          file.path("gephi", "prd.gdf"))
+createGDF(filter(all, partido == "PRD"), file.path("gephi", "prd.gdf"))
+freq <- filter(all, partido == "PRI") %>%
   group_by(paterno, materno) %>%
   summarise(Weight = n()) %>%
   arrange(desc(Weight)) %>%
   filter(Weight > 2)
-createGDF(semi_join(pri, freq), file.path("gephi", "pri10.gdf"))
-createGDF(rbind(filter(pan, entidad == "YUCATAN"),
-                filter(pri, entidad == "YUCATAN"),
-                filter(prd, entidad == "YUCATAN")), 
+createGDF(semi_join(filter(all, partido == "PRI"), freq), 
+          file.path("gephi", "pri10.gdf"))
+createGDF(filter(all, entidad == "YUCATAN"), 
           file.path("gephi", "pan-pri-prd-yucatan.gdf"))
-createGDF(rbind(filter(pan, entidad == "QUINTANA ROO"),
-                filter(pri, entidad == "QUINTANA ROO"),
-                filter(prd, entidad == "QUINTANA ROO")), 
+createGDF(filter(all, entidad == "QUINTANA ROO"), 
           file.path("gephi", "pan-pri-prd-qroo.gdf"))
-createGDF(rbind(filter(pan, entidad == "CAMPECHE"),
-                filter(pri, entidad == "CAMPECHE"),
-                filter(prd, entidad == "CAMPECHE")),
+createGDF(filter(all, entidad == "CAMPECHE"),
           file.path("gephi", "pan-pri-prd-camp.gdf"))
 
-createGDF(rbind(filter(pan, entidad == "CHIAPAS"),
-                filter(pri, entidad == "CHIAPAS"),
-                filter(prd, entidad == "CHIAPAS")), 
+createGDF(filter(all, entidad == "CHIAPAS"), 
           file.path("gephi", "pan-pri-prd-chis.gdf"))
 
