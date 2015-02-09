@@ -54,6 +54,18 @@ pri$state_code <- map[unlist(pri$entidad)]
 all <- rbind(pri,pan,prd)
 rm(pri);rm(pan);rm(prd)
 
+
+all$nombre <- str_replace_all(all$nombre, "^J | J | J$", " JUAN ")
+all$nombre <- str_replace_all(all$nombre, "^MA | MA | MA$", " MARIA ")
+all$nombre <- str_replace_all(all$nombre, "^M | M | M$", " MARIA ")
+all$nombre <- str_replace_all(all$nombre, "^MA. | MA. | MA.$", " MARIA ")
+all$nombre <- str_replace_all(all$nombre, "^S C | S C | S C$", " SAGRADO CORAZON ")
+all$nombre <- str_replace_all(all$nombre, "^SDO | SDO | SDO$", " SAGRADO ")
+all$nombre <- str_replace_all(all$nombre, "^SGDO | SGDO | SGDO$", " SAGRADO  ")
+all$nombre <- str_replace_all(all$nombre, "^M | M | M$", "MARIA ")
+
+all$nombre <- toupper(all$nombre)
+
 ## Read the state map
 
 states <- readOGR("maps", "ESTADOS")

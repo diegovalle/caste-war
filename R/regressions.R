@@ -1,5 +1,5 @@
 mostXNames <- function(total, party, x, y, color) {
-  df <- filter(total, partido == party)[1:30,]
+  df <- filter(total, partido == party)[1:50,]
   df <- droplevels(df)
   df$nombre <- reorder(df$nombre, df$per, mean)
   ggplot(df, aes(per, nombre)) +
@@ -17,23 +17,41 @@ mostXNames <- function(total, party, x, y, color) {
     theme_bw()
 }
 
+mostXSingleNames <- function(df, party, x, y, color, average) {
+  df <- df[1:50,]
+  df <- droplevels(df)
+  df$name <- reorder(df$name, df[[party]], mean)
+  ggplot(df, aes_string(party, "name")) +
+    geom_point(aes_string(size = str_c("freq.", tolower(party))), color = color) +
+    geom_vline(xintercept = average, color = gray,
+               linetype = 2) +
+    annotate("text", y = y, x =x, 
+             label = str_c("Average ", party, "\nname"),
+             hjust = 0, size = 4) +
+    ggtitle(str_c("These are the most overrepresented names in the ", 
+                  party, ",\ngiven that someone belongs to a political party\n")) +
+    scale_x_continuous(labels = percent) +
+    scale_size_area("name\ncount") +
+    xlab(str_c("percentage bearing the name that are members of the ", party)) +
+    ylab("name") +
+    theme_bw()
+}
+
 ## Tables of the most overepresented names by party 
-
-
 
 total <- all %>%
   group_by(nombre) %>%
   summarise(count = n()) %>%
   arrange(desc(count))
 
+total.all  <- all %>%
+  group_by(partido) %>%
+  summarise(per.all = n() / nrow(all) )
+
 total.parties <- all %>%
   group_by(nombre, partido) %>%
   summarise(count.party = n()) %>%
   arrange(desc(count.party), partido)
-
-total.all  <- all %>%
-  group_by(partido) %>%
-  summarise(per.all = n() / nrow(all) )
 
 total %<>% inner_join(total.parties) %>% 
   inner_join(total.all) %>%
@@ -50,14 +68,14 @@ ggsave(file.path("charts", "prd_names.svg"), dpi = 100, width = 7, height = 9)
 mostXNames(total, "PRI", .65, "NORMA ARACELY", PRI.COLOR)
 ggsave(file.path("charts", "pri_names.svg"), dpi = 100, width = 7, height = 9)
 
-print.data.frame(head(filter(total, partido == "PAN"), 30))
+print.data.frame(head(filter(total, partido == "PAN"), 100))
 print.data.frame(head(filter(total, partido == "PRI"), 30))
 print.data.frame(head(filter(total, partido == "PRD"), 100))
 filter(total, nombre == "DIEGO")
-print.data.frame(total[which(total$nombre %in% c("NAYELI", "MAYELI", "NAYELLI",
+kable(print.data.frame(total[which(total$nombre %in% c("NAYELI", "MAYELI", "NAYELLI",
                           "ANA YELI", "ANALLELI", "ANAYELI",
                           "ANALLELY", "NALLELY", "YANELI",
-                          "NAYELY")),])
+                          "NAYELY", "YELI")),][1:6]),  digits = 2)
 
 
 
@@ -70,42 +88,156 @@ uniq.parties <- all %>%
   inner_join(all %>% group_by(partido) %>% summarise(count = n())) %>%
   mutate(per = unique / count)
 
+
+pan <- unique(unlist(strsplit(filter(all, partido == "PAN")$nombre, " ")))
+prd <- unique(unlist(strsplit(filter(all, partido == "PRD")$nombre, " ")))
+pri <- unique(unlist(strsplit(filter(all, partido == "PRI")$nombre, " ")))
+kable(data_frame(name = sort(sample(pan[!pan %in% c(prd, pri)], 20))))
+kable(data_frame(name = sort(sample(prd[!prd %in% c(pri, pan)], 20))))
+kable(data_frame(name = sort(sample(pri[!pri %in% c(prd, pan)], 20))))
+
 uniq.parties$names <- NA
-vec<-unlist(str_split(filter(all, partido == "PAN")$nombre, " "))
-uniq.parties$names[1] <- length(unique(vec))
-vec<-unlist(str_split(filter(all, partido == "PRD")$nombre, " "))
-uniq.parties$names[2] <- length(unique(vec))
-vec<-unlist(str_split(filter(all, partido == "PRI")$nombre, " "))
-uniq.parties$names[3] <- length(unique(vec))
+uniq.parties$names[1] <- length(pan)
+uniq.parties$names[2] <- length(prd)
+uniq.parties$names[3] <- length(pri)
 
 uniq.parties$per.names <- uniq.parties$names / uniq.parties$count
 
 ggplot(uniq.parties, aes(partido, per.names, fill = partido)) +
   geom_bar(stat = "identity") +
   ggtitle("Percentage of unique names by party") +
-  xlab("percent unique") +
+  ylab("percent unique") +
+  xlab("party") +
   scale_fill_manual("party",
                      breaks = c("PRI", "PRD", "PAN"), 
                      values = c("#2b8cbe", "#fed300", "#de2d26")) +
   theme_bw() +
+  scale_y_continuous(labels =percent) +
   coord_flip()
 ggsave(file.path("charts", "unique_name.svg"), 
        dpi = 100, width = 7.60, height = 5)
-# uniq.states <- all %>%
-#   group_by(state_code, partido) %>%
-#   summarise(unique.names = length(unique(unlist(str_split(nombre, " ")))),
-#             count = n())
-# uniq.states$per.names <- uniq.states$unique.names / uniq.states$count
-# 
-# ggplot(left_join(states.uniq, uniq.states), aes(lat, lon, fill = per.names)) +
-#   geom_polygon(aes(long, lat, group=group),
-#                color = "black", size = .1) +
-#   coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
-#   theme_bw() + 
-#   ggtitle("title") +
-#   theme_bare +
-#   facet_wrap(~ partido, ncol = 2)
-# 
+
+
+## Unique spearate first names
+
+total <- all %>%
+  group_by(nombre) %>%
+  summarise(count = length(unique(unlist(strsplit(nombre, " "))))) %>%
+  arrange(desc(count))
+
+names <- as.data.frame(table(unlist(strsplit(all$nombre, " "))))
+names(names) <- c("name", "freq")
+names.pan <- as.data.frame(table(unlist(strsplit(filter(all, partido == "PAN")$nombre, " "))))
+names(names.pan) <- c("name", "freq.pan")
+names.prd <- as.data.frame(table(unlist(strsplit(filter(all, partido == "PRD")$nombre, " "))))
+names(names.prd) <- c("name", "freq.prd")
+names.pri <- as.data.frame(table(unlist(strsplit(filter(all, partido == "PRI")$nombre, " "))))
+names(names.pri) <- c("name", "freq.pri")
+
+names <- Reduce(function(...) merge(..., all=TRUE), 
+                list(names, names.pan, names.prd, names.pri))
+names[is.na(names)] <- 0
+pers <- colSums(names[,2:ncol(names)], na.rm = TRUE)[2:4] / colSums(names[,2:ncol(names)], na.rm = TRUE)[1]
+
+names %<>% mutate(PAN = freq.pan/freq,
+                  PRD = freq.prd/freq,
+                  PRI = freq.pri/freq) %>%
+  mutate(exss.pan = PAN - total.all$per.all[1],
+         exss.prd =  PRD - total.all$per.all[2],
+         exss.pri = PRI- total.all$per.all[3] )
+
+pan.names <- filter(names, freq >= 100 & freq.pan >= 30) %>%
+  arrange(desc(exss.pan)) %>%
+  mutate(prty = "PAN")
+prd.names <- filter(names, freq >= 100 & freq.prd >= 30) %>%
+  arrange(desc(exss.prd))%>%
+  mutate(prty = "PRD")
+pri.names <- filter(names, freq >= 100 & freq.prd >= 30) %>%
+  arrange(desc(exss.pri))%>%
+  mutate(prty = "PRI")
+print.data.frame(names[which(names$name %in% c("NAYELI", "MAYELI", "NAYELLI",
+                                                 "ANA YELI", "ANALLELI", "ANAYELI",
+                                                 "ANALLELY", "NALLELY", "YANELI",
+                                                 "NAYELY", "YELI", "ANAYELY")),])
+
+# Average levenshtein distance to each and every word
+aveAveDist <- function(df) {
+  dist <- stringdistmatrix(df$name, df$name, method = "soundex")
+  mean(colMeans(dist))
+}
+
+aveAveDist(pan.names)
+aveAveDist(prd.names)
+aveAveDist(pri.names)
+
+party.names <- Reduce(function(...) merge(..., all=TRUE), 
+                list(pan.names[1:500,], prd.names[1:500,], pri.names[1:500,]))
+ggtern(party.names,aes(PAN, PRI, PRD))+
+  #geom_density2d(aes(color = prty), alpha = .5) +
+  geom_point(aes(label = name, color = prty), alpha = .5) +
+  scale_color_manual("party",
+                    breaks = c("PAN", "PRI", "PRD"), 
+                    values = c(PAN.COLOR, PRD.COLOR, PRI.COLOR)) +
+  ggtitle("The most partisan names (500 most overrepresented, by party)")
+ggsave(file.path("charts", "triforce.svg"), dpi = 100, width = 20, height = 20)
+
+
+mostXSingleNames(pan.names, "PAN", .031, "LIGIA", PAN.COLOR, pers[1])
+ggsave(file.path("charts", "pan_names_single.svg"), dpi = 100, width = 7, height = 9)
+mostXSingleNames(prd.names, "PRD", .33, "ANALLELI", PRD.COLOR, pers[2])
+ggsave(file.path("charts", "prd_names_single.svg"), dpi = 100, width = 7, height = 9)
+mostXSingleNames(pri.names, "PRI", .66, "SAN", PRI.COLOR, pers[3])
+ggsave(file.path("charts", "pri_names_single.svg"), dpi = 100, width = 7, height = 9)
+## Unique names by state
+
+uniq.states <- all %>%
+  group_by(state_code) %>%
+  summarise(unique.names = length(unique(unlist(strsplit(nombre, " ")))),
+            count = n()) %>%
+  mutate(per.names = unique.names / count)
+
+ggplot(left_join(states.ff, uniq.states), aes(lat, lon, fill = per.names)) +
+  geom_polygon(aes(long, lat, group=group),
+               color = "black", size = .1) +
+  coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
+  theme_bw() + 
+  ggtitle("Percentage of unique first names by state and party") +
+  theme_bare +
+  scale_fill_gradient2("percent\nunique", labels=percent,
+                       low = "#af8dc3", high = "#7fbf7b", mid = "#f7f7f7", space = "Lab")
+ggsave(file.path("charts", "unique_name_map.svg"), 
+       dpi = 100, width = 9, height = 7)
+
+uniq.states.paterno <- all %>%
+  group_by(state_code) %>%
+  summarise(unique.names.paterno = length(unique(paterno, " ")),
+            count.paterno = n())
+
+uniq.states.materno <- all %>%
+  group_by(state_code) %>%
+  summarise(unique.names.materno = length(unique(materno, " ")),
+            count.materno = n()) 
+
+uniq.states.paterno$unique.names <-   uniq.states.materno$unique.names.materno + 
+  uniq.states.paterno$unique.names.paterno
+uniq.states.paterno$count <- uniq.states.materno$count.materno + 
+  uniq.states.paterno$count.paterno
+uniq.states.paterno$per.names =  uniq.states.paterno$unique.names /  uniq.states.paterno$count
+
+ggplot(left_join(states.ff, uniq.states.paterno), aes(lat, lon, fill = per.names)) +
+  geom_polygon(aes(long, lat, group=group),
+               color = "black", size = .1) +
+  coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
+  theme_bw() + 
+  ggtitle("Percentage of unique last names (paternal and maternal) by state") +
+  theme_bare +
+  scale_fill_gradient2("percent\nunique", labels=percent,
+                       low = "#998ec3", high = "#f1a340", mid = "#f7f7f7", space = "Lab")
+ggsave(file.path("charts", "unique_lastnames_map.svg"), 
+       dpi = 100, width = 9, height = 7)
+
+
+
 # uniq.states <- all %>%
 #   group_by(nombre, state_code) %>%
 #   summarise(a = n())%>%
@@ -139,6 +271,8 @@ ggplot(all,
 ggsave(file.path("charts", "length_distribution_parties.svg"), 
        dpi = 100, width = 9.60, height = 7)
 
+
+
 dist_s <- condense(bin(all$length, 1))
 autoplot(dist_s) +
   ggtitle("Distribution of name length for all major political parties (PAN, PRI, PRD)") +
@@ -151,10 +285,11 @@ all %>%
   summarise(quantile(length, probs = .02))
 
 all[which.max(all$length),]
+all[which.min(all$length),]
 all[which(all$length == 53),]
 
-ggplot(all, aes(partido, length)) +
-  geom_boxplot()
+# ggplot(all, aes(partido, length)) +
+#   geom_boxplot()
 
 pran <- filter(all, partido %in% c("PAN", "PRD"))
 
@@ -162,11 +297,20 @@ pran$partido <- as.factor(pran$partido)
 pran$partido <- relevel(pran$partido, "PRD")
 
 
+#plot the percentage of names belonging to the pan by length
+ggplot(pran %>%
+         group_by(partido, length) %>%
+         summarise(count = n()) %>%
+         spread(partido, count) %>%
+         mutate(per.prd = PRD / (PAN + PRD),
+                per.pan = PAN / (PAN + PRD)),
+  aes(length, per.pan)) +
+  geom_line()
 
 
 fit.len <- glm(partido ~ length, family = binomial(), 
                data = pran)
-plot(fit.len, which = 1)
+# plot(fit.len, which = 1)
 # qplot(.fitted, .resid, data = fit.len) +
 #   geom_hline(yintercept = 0) +
 #   geom_smooth(se = FALSE)
@@ -179,7 +323,7 @@ plot(fit.len, which = 1)
 # test <- multinom(partido ~ length, data = all)
 summary(fit.len)
 exp(coef(fit.len))
-visreg(fit.len,  scale="response")
+#visreg(fit.len,  scale="response")
 
 pred.df <-  data.frame(partido = as.factor(rep(c("PAN", "PRD"), each = 37)), 
                        length = rep(14:50, 2))
