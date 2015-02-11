@@ -9,7 +9,8 @@ mostXNames <- function(total, party, x, y, color) {
     annotate("text", y = y, x =x, 
              label = str_c("Average ", party, "\nname"),
              hjust = 0, size = 4) +
-    ggtitle(str_c("These are the most overrepresented names in the ", party, ",\ngiven that someone belongs to a political party\n")) +
+    ggtitle(str_c("These are the most overrepresented full first names in the ", party, 
+                  ",\ngiven that someone is a member of the PRI, PRD or PAN\n")) +
     scale_x_continuous(labels = percent) +
     scale_size_area("name\ncount") +
     xlab(str_c("percentage bearing the name that are members of the ", party)) +
@@ -28,8 +29,8 @@ mostXSingleNames <- function(df, party, x, y, color, average) {
     annotate("text", y = y, x =x, 
              label = str_c("Average ", party, "\nname"),
              hjust = 0, size = 4) +
-    ggtitle(str_c("These are the most overrepresented names in the ", 
-                  party, ",\ngiven that someone belongs to a political party\n")) +
+    ggtitle(str_c("These are the most overrepresented single names in the ", 
+                  party, ",\ngiven that someone is a member of the PRI, PRD or PAN\n")) +
     scale_x_continuous(labels = percent) +
     scale_size_area("name\ncount") +
     xlab(str_c("percentage bearing the name that are members of the ", party)) +
@@ -105,7 +106,7 @@ uniq.parties$per.names <- uniq.parties$names / uniq.parties$count
 
 ggplot(uniq.parties, aes(partido, per.names, fill = partido)) +
   geom_bar(stat = "identity") +
-  ggtitle("Percentage of unique names by party") +
+  ggtitle("Percentage of names that are present in only one party") +
   ylab("percent unique") +
   xlab("party") +
   scale_fill_manual("party",
@@ -170,6 +171,10 @@ aveAveDist(pan.names)
 aveAveDist(prd.names)
 aveAveDist(pri.names)
 
+#find all names that look like Nayeli
+dist <- stringdistmatrix(all$nombre, "NAYELI")
+dput(unique(all[which(dist <= 2), "nombre"]))
+
 party.names <- Reduce(function(...) merge(..., all=TRUE), 
                 list(pan.names[1:500,], prd.names[1:500,], pri.names[1:500,]))
 ggtern(party.names,aes(PAN, PRI, PRD))+
@@ -201,7 +206,7 @@ ggplot(left_join(states.ff, uniq.states), aes(lat, lon, fill = per.names)) +
                color = "black", size = .1) +
   coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
   theme_bw() + 
-  ggtitle("Percentage of unique first names by state and party") +
+  ggtitle("Number of unique first names (PRI, PRD and PAN) as a percentage of total names,\nby state") +
   theme_bare +
   scale_fill_gradient2("percent\nunique", labels=percent,
                        low = "#af8dc3", high = "#7fbf7b", mid = "#f7f7f7", space = "Lab")
@@ -229,7 +234,7 @@ ggplot(left_join(states.ff, uniq.states.paterno), aes(lat, lon, fill = per.names
                color = "black", size = .1) +
   coord_map("albers", lat0 = bb[ 2 , 1 ] , lat1 = bb[ 2 , 2 ] ) +
   theme_bw() + 
-  ggtitle("Percentage of unique last names (paternal and maternal) by state") +
+  ggtitle("Number of unique last names (paternal and maternal) as a percentage of total last names,\nby state") +
   theme_bare +
   scale_fill_gradient2("percent\nunique", labels=percent,
                        low = "#998ec3", high = "#f1a340", mid = "#f7f7f7", space = "Lab")

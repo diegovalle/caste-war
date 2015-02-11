@@ -2,6 +2,13 @@ qroo <- read.csv(file.path("data", "QROO FINAL.pdf.csv.xz"), header = FALSE)
 names(qroo) <- c("num", "paterno", "materno", "nombre", "clave", "edo", "mun", "seccion")
 qroo <- filter(qroo, num != "NO.")
 
+yuc.prd <- read.csv(file.path("listado_nominal/PRD/csv/NEWFILENAME.csv"), header = FALSE)
+names(yuc.prd) <- c("num", "paterno", "materno", "nombre", "clave", "edo", "mun", "seccion")
+createGDF(yuc.prd, file.path("gephi", "yuc-prd.gdf"))
+view(yuc.prd %>%
+  group_by(paterno,materno) %>%
+  summarise(weight = n())%>%
+  arrange(desc(weight)))
 
 qroo$birth <- parse_date_time(str_sub(qroo$clave, 7, 12), "%y%m%d") - years(100)
 qroo$state.of.birth <- as.numeric(str_sub(qroo$clave, 13, 14))
